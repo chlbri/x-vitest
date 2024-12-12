@@ -48,6 +48,7 @@ export function interpret<
     : MissingImplementationsError<TResolvedTypesMeta>,
   options: InterpreterOptions = { simulateClock: true },
 ) {
+  // #region Types
   type RT = ReturnType<
     typeof _interpret<
       TContext,
@@ -58,7 +59,8 @@ export function interpret<
       TResolvedTypesMeta
     >
   >;
-  type _Ri1 = TransformObjectTest<
+
+  type _RT1 = TransformObjectTest<
     Omit<
       RT,
       | '__status'
@@ -90,12 +92,12 @@ export function interpret<
       : never
     : never;
 
-  type Ri = _Ri1 & {
+  type Ri = _RT1 & {
     stop: () => void;
     start: (initial?: Initial) => void;
     group: (
       invite: string,
-      func: (args: _Ri1) => void,
+      func: (args: _RT1) => void,
       _optionsTest?: TestOptions | number,
     ) => void;
     sender: <T extends TEvents['type']>(
@@ -106,7 +108,6 @@ export function interpret<
     ) => void;
   };
 
-  // type TimeArgs = typeof
   type Service = ReturnType<
     typeof _interpret<
       TContext,
@@ -117,6 +118,7 @@ export function interpret<
       TResolvedTypesMeta
     >
   >;
+  // #endregion
 
   const _group = (
     invite: string,
@@ -125,7 +127,7 @@ export function interpret<
     _optionsTest?: TestOptions | number,
   ) => {
     const collection: {
-      type: keyof _Ri1 | 'stop' | 'start' | 'group';
+      type: keyof _RT1 | 'stop' | 'start' | 'group';
       args: [str: string, ...args: any[]];
     }[] = [];
 
@@ -252,10 +254,6 @@ export function interpret<
               case 'stop':
                 //@ts-ignore
                 service.stop();
-                break;
-
-              default:
-                break;
             }
           });
         });
@@ -269,7 +267,7 @@ export function interpret<
     func: (args: Ri) => void,
     _optionsTest?: TestOptions | number,
   ) => {
-    let service = _interpret(machine, options);
+    const service = _interpret(machine, options);
 
     return _group(invite, service, func, _optionsTest);
   };

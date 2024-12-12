@@ -19,7 +19,6 @@ describe('Workflows', () => {
     'Workflow #1',
     ({ start, matches, context, send, advanceTime, stop, group }) => {
       start();
-
       matches('State is "idle"', 'idle');
 
       context(
@@ -51,9 +50,7 @@ describe('Workflows', () => {
     'Workflow #2',
     ({ start, matches, advanceTime, stop, group, hasTags, sender }) => {
       start();
-
       matches('State is "idle"', 'idle');
-
       advanceTime('Wait THROTTLE_TIME', THROTTLE_TIME + 5);
 
       group('#3 => Nothing is updated', ({ context }) => {

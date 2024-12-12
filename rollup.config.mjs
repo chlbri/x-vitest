@@ -1,3 +1,4 @@
+import terser from '@rollup/plugin-terser';
 import { globSync } from 'glob';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,12 +7,13 @@ import { nodeExternals } from 'rollup-plugin-node-externals';
 import tscAlias from 'rollup-plugin-tsc-alias';
 import typescript from 'rollup-plugin-typescript2';
 
-const ignore = [
+const exclude = [
   '**/*.test.ts',
   '**/*.test-d.ts',
   '**/*.fixtures.ts',
   '**/*.fixture.ts',
   '**/fixtures.ts',
+  '**/fixtures/**/*',
   '**/fixture.ts',
   'src/tests/**/*',
   'src/config/**/*',
@@ -19,7 +21,7 @@ const ignore = [
 
 const input = Object.fromEntries(
   globSync('src/**/*.ts', {
-    ignore,
+    ignore: [...exclude, '**/types.ts'],
   }).map(file => [
     // This remove `src/` as well as the file extension from each
     // file, so e.g. src/nested/foo.js becomes nested/foo
@@ -40,7 +42,7 @@ export default defineConfig({
     tscAlias(),
     typescript({
       tsconfigOverride: {
-        exclude: ignore,
+        exclude,
       },
     }),
 
@@ -48,8 +50,9 @@ export default defineConfig({
       optDeps: false,
       builtinsPrefix: 'strip',
     }),
+    terser(),
   ],
-  external: ['node:path'],
+  external: ['node:path', 'vitest'],
   output: [
     {
       format: 'cjs',

@@ -1,7 +1,7 @@
 {
-  "name": "@bemedev///TODO",
+  "name": "@bemedev/x-vitest",
   "version": "0.0.1",
-  "description": "//TODO",
+  "description": "A library to test xstate workflow with vitest",
   "author": {
     "email": "bri_lvi@icloud.com",
     "name": "chlbri",
@@ -71,6 +71,7 @@
     "@bemedev/vitest-extended": "^0.4.1",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.16.0",
+    "@rollup/plugin-terser": "^0.4.4",
     "@types/node": "^22.10.2",
     "@typescript-eslint/eslint-plugin": "^8.18.0",
     "@typescript-eslint/parser": "^8.18.0",
