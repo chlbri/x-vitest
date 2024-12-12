@@ -2,7 +2,7 @@ import {
   interpret as _interpret,
   type InterpreterOptions,
 } from '@bemedev/x-test';
-import { afterAll, describe, test, type TestOptions } from 'vitest';
+import { describe, test, type TestOptions } from 'vitest';
 import type {
   AreAllImplementationsAssumedToBeProvided,
   BaseActionObject,
@@ -48,18 +48,19 @@ export function interpret<
     : MissingImplementationsError<TResolvedTypesMeta>,
   options: InterpreterOptions = { simulateClock: true },
 ) {
+  type RT = ReturnType<
+    typeof _interpret<
+      TContext,
+      TEvents,
+      TTypestate,
+      TAction,
+      TServiceMap,
+      TResolvedTypesMeta
+    >
+  >;
   type _Ri1 = TransformObjectTest<
     Omit<
-      ReturnType<
-        typeof _interpret<
-          TContext,
-          TEvents,
-          TTypestate,
-          TAction,
-          TServiceMap,
-          TResolvedTypesMeta
-        >
-      >,
+      RT,
       | '__status'
       | 'getSnapshot'
       | 'sender'
@@ -80,26 +81,55 @@ export function interpret<
     | StateConfig<TContext, TEvents>
     | undefined;
 
+  type Tev<T extends TEvents['type']> = TEvents extends {
+    type: T;
+  } & infer U
+    ? // eslint-disable-next-line @typescript-eslint/ban-types
+      U extends {}
+      ? Omit<U, 'type'>
+      : never
+    : never;
+
   type Ri = _Ri1 & {
     stop: () => void;
     start: (initial?: Initial) => void;
+    group: (
+      invite: string,
+      func: (args: _Ri1) => void,
+      _optionsTest?: TestOptions | number,
+    ) => void;
+    sender: <T extends TEvents['type']>(
+      event: T,
+    ) => (
+      invite: string,
+      ...data: Tev<T> extends never ? [] : [event: Tev<T>]
+    ) => void;
   };
 
   // type TimeArgs = typeof
+  type Service = ReturnType<
+    typeof _interpret<
+      TContext,
+      TEvents,
+      TTypestate,
+      TAction,
+      TServiceMap,
+      TResolvedTypesMeta
+    >
+  >;
 
-  const group = (
+  const _group = (
     invite: string,
+    service: Service,
     func: (args: Ri) => void,
     _optionsTest?: TestOptions | number,
   ) => {
-    let service = _interpret(machine, options);
-
     const collection: {
-      type: keyof _Ri1 | 'stop' | 'start';
+      type: keyof _Ri1 | 'stop' | 'start' | 'group';
       args: [str: string, ...args: any[]];
     }[] = [];
 
-    const collector: Omit<Ri, 'describe'> = {
+    const collector: Ri = {
       context: (...args) => {
         collection.push({
           type: 'context',
@@ -147,19 +177,47 @@ export function interpret<
           args: ['Stop the machine'],
         });
       },
+      group: (...args) => {
+        collection.push({
+          type: 'group',
+          args,
+        });
+      },
+      sender: <T extends TEvents['type']>(type: T) => {
+        type E = TEvents extends {
+          type: T;
+        } & infer U
+          ? // eslint-disable-next-line @typescript-eslint/ban-types
+            U extends {}
+            ? Omit<U, 'type'>
+            : never
+          : never;
+
+        const fn = (
+          invite: string,
+          ...data: E extends never ? [] : [event: E]
+        ) => {
+          const _data = { type, ...data?.[0] };
+          collection.push({
+            type: 'send',
+            args: [invite, _data],
+          });
+        };
+        return fn;
+      },
     };
 
-    func(collector);
+    func({ ...collector });
 
     return describe(
       invite,
       () => {
-        afterAll(() => {
-          //@ts-ignore
-          service = undefined;
-        });
         collection.forEach(({ type, args: [invite, ...args] }, index) => {
-          test(`#${index} => ${invite}`, async () => {
+          if (type === 'group') {
+            //@ts-ignore
+            return _group(`#${index} => ${invite}`, service, ...args);
+          }
+          return test(`#${index} => ${invite}`, async () => {
             switch (type) {
               case 'context':
                 //@ts-ignore
@@ -204,6 +262,16 @@ export function interpret<
       },
       _optionsTest,
     );
+  };
+
+  const group = (
+    invite: string,
+    func: (args: Ri) => void,
+    _optionsTest?: TestOptions | number,
+  ) => {
+    let service = _interpret(machine, options);
+
+    return _group(invite, service, func, _optionsTest);
   };
 
   return group;
