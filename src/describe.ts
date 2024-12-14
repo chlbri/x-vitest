@@ -86,8 +86,7 @@ export function interpret<
   type Tev<T extends TEvents['type']> = TEvents extends {
     type: T;
   } & infer U
-    ? // eslint-disable-next-line @typescript-eslint/ban-types
-      U extends {}
+    ? U extends object
       ? Omit<U, 'type'>
       : never
     : never;
@@ -132,35 +131,35 @@ export function interpret<
     }[] = [];
 
     const collector: Ri = {
-      context: (...args) => {
+      context: (...args: any) => {
         collection.push({
           type: 'context',
           args,
         });
       },
 
-      advanceTime: (...args) => {
+      advanceTime: (...args: any) => {
         collection.push({
           type: 'advanceTime',
           args,
         });
       },
 
-      hasTags: (...args) => {
+      hasTags: (...args: any) => {
         collection.push({
           type: 'hasTags',
           args,
         });
       },
 
-      matches: (...args) => {
+      matches: (...args: any) => {
         collection.push({
           type: 'matches',
           args,
         });
       },
 
-      send: (...args) => {
+      send: (...args: any) => {
         collection.push({
           type: 'send',
           args,
@@ -189,8 +188,7 @@ export function interpret<
         type E = TEvents extends {
           type: T;
         } & infer U
-          ? // eslint-disable-next-line @typescript-eslint/ban-types
-            U extends {}
+          ? U extends object
             ? Omit<U, 'type'>
             : never
           : never;
@@ -216,43 +214,38 @@ export function interpret<
       () => {
         collection.forEach(({ type, args: [invite, ...args] }, index) => {
           if (type === 'group') {
-            //@ts-ignore
+            //@ts-expect-error valid param args
             return _group(`#${index} => ${invite}`, service, ...args);
           }
           return test(`#${index} => ${invite}`, async () => {
             switch (type) {
               case 'context':
-                //@ts-ignore
+                //@ts-expect-error valid param args
                 service.context(...args);
                 break;
 
               case 'advanceTime':
-                //@ts-ignore
                 await service.advanceTime(...args);
                 break;
 
               case 'hasTags':
-                //@ts-ignore
                 service.hasTags(...args);
                 break;
 
               case 'matches':
-                //@ts-ignore
                 service.matches(...args);
                 break;
 
               case 'send':
-                //@ts-ignore
+                //@ts-expect-error valid param args
                 service.send(...args);
                 break;
 
               case 'start':
-                //@ts-ignore
                 service.start(...args);
                 break;
 
               case 'stop':
-                //@ts-ignore
                 service.stop();
             }
           });
